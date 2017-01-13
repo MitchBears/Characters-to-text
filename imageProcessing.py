@@ -53,29 +53,11 @@ def findHeight(contour):
 	dst = distance.euclidean( (tltrX, tltrY) , (blbrX,blbrY) )
 	return dst
 
-def getRects(rects, image, im_th):
-	for rect in rects:
-		cv2.rectangle(image, (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0), 3)
-		# Make the rectangular region around the digit
-		leng = int(rect[3] * 1.6)
-		pt1 = int(rect[1] + rect[3] // 2 - leng // 2)
-		pt2 = int(rect[0] + rect[2] // 2 - leng // 2)
-		roi = im_th[pt1:pt1+leng, pt2:pt2+leng] 
-		# Resize the image 
-		roi = cv2.resize(roi, (28, 28), interpolation=cv2.INTER_AREA)
-		roi = cv2.dilate(roi, (3, 3))
-		
-
-
 def main():
-	img = cv2.imread('test3.png', cv2.IMREAD_GRAYSCALE)
+	img = cv2.imread('test1.png', cv2.IMREAD_GRAYSCALE)
 	
 	#GaussianBlur in order to get rid of Gaussian noise.
 	blur = cv2.GaussianBlur(img,(3,3),0)
-
-	#Adaptive threshold in order to isolate all black and white areas.
-	#adapted = cv2.adaptiveThreshold(blur,255,cv2.ADAPTIVE_THRESH_MEAN_C,\
-	            #cv2.THRESH_BINARY,75,10)
 
 	#CONTOUR DETECTION
 	_,thresh = cv2.threshold(blur,90,255,cv2.THRESH_BINARY_INV)
@@ -83,19 +65,23 @@ def main():
 	#Detect contours using both methods on the same image
 	contours, hierarchy= cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 
-	#rects = [cv2.boundingRect(contour) for contour in contours]
-
+	#Before sorting from left to right, use sort_contours to sort the contours from top to bottom.
 	contours = sort_contours(contours, "top-to-bottom")
 
+	#Initialize the line list and contour list
 	line_list = []
 	contour_list = []
 	
 	for contour in contours:
 		area = cv2.contourArea(contour)
+		#If area is under 10, most likely image noise. 
 		if area <= 10.0:
 			continue
 
+		#Initialize inLineList to false
 		inLineList = False
+
+		#Calculate the height and the center of the contour.
 		height = findHeight(contour)
 		center = findCenter(contour)
 
@@ -108,7 +94,7 @@ def main():
 		if (inLineList is True):
 			continue
 		else:
-			print center
+			#print center
 			#x,y,w,h = cv2.boundingRect(contour)
 			#cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
 			#cv2.imshow("Result", img)
@@ -116,9 +102,6 @@ def main():
 			line_list.append(center)
 			contour_list.append([contour])
 
-	
-	print len(line_list)
-	print len(contour_list)
 	i=0
 	for contours in contour_list:
 		contours = sort_contours(contours)
